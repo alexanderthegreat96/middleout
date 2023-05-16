@@ -5,6 +5,7 @@ namespace App\Repositories\Api\V1;
 
 use App\Interfaces\Api\V1\ArticleRepositoryInterface;
 use App\Models\Api\V1\Article;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ArticleRepository implements ArticleRepositoryInterface
@@ -16,6 +17,9 @@ class ArticleRepository implements ArticleRepositoryInterface
     public function createArticle(array $articleData = [])
     {
         try {
+
+            Cache::forget('articles');
+
             DB::insert(
                 'insert into articles (title, body, user_id, published_at) values (?, ?, ?, ?)',
                 [$articleData['title'], $articleData['body'], $articleData['user_id'], date('Y-m-d H:i:s')]

@@ -20,31 +20,34 @@ class ArticleController extends Controller
     /**
      * @param ArticleRepositoryInterface $articleRepository
      */
-    public function __construct(ArticleRepositoryInterface $articleRepository) {
+    public function __construct(ArticleRepositoryInterface $articleRepository)
+    {
         return $this->articleRepository = $articleRepository;
     }
 
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request) : JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $keyword = '';
 
-        if($request->has('search')) {
+        if ($request->has('search')) {
             $keyword = $request->get('search');
         }
 
-        $data = $this->articleRepository->getAllArticles($keyword);
+        if (!$keyword) {
+            $cached = Cache::get('articles');
+            if ($cached) {
+                $data = json_decode($cached, true);
+            } else {
+                $data = $this->articleRepository->getAllArticles($keyword);
+                Cache::forever('articles', json_encode($data));
+            }
+        } else {
+            $data = $this->articleRepository->getAllArticles($keyword);
+        }
 
-//        $cached = Cache::get('articles');
-//        if($cached) {
-//            if(count($data) != count($cached)) {
-//
-//            }
-//        } else {
-//            Cache::forever('articles', json_encode($data));
-//        }
 
         return response()->json([
             'data' => $data
@@ -55,7 +58,7 @@ class ArticleController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(ArticleRequest $request) : JsonResponse
+    public function store(ArticleRequest $request): JsonResponse
     {
         $articleData = $request->only(['title', 'body', 'user_id']);
 
@@ -84,7 +87,7 @@ class ArticleController extends Controller
         $articleData = $request->only(['title', 'body', 'user_id']);
 
         return response()->json([
-            'data' => $this->articleRepository->updateArticle($id,$articleData)
+            'data' => $this->articleRepository->updateArticle($id, $articleData)
         ]);
     }
 
@@ -100,7 +103,8 @@ class ArticleController extends Controller
     /**
      * @return JsonResponse
      */
-    public function count(){
+    public function count()
+    {
         return response()->json([
             'data' => $this->articleRepository->countArticles()
         ]);
